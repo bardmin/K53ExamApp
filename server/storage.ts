@@ -1,38 +1,17 @@
-import { type User, type InsertUser } from "@shared/schema";
-import { randomUUID } from "crypto";
-
-// modify the interface with any CRUD methods
-// you might need
+import { Question } from "@shared/schema";
+import fs from "fs/promises";
+import path from "path";
 
 export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  getQuestions(): Promise<Question[]>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-
-  constructor() {
-    this.users = new Map();
-  }
-
-  async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
-  }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+export class JsonStorage implements IStorage {
+  async getQuestions(): Promise<Question[]> {
+    const dataPath = path.join(process.cwd(), "server", "data", "questiondata.json");
+    const data = await fs.readFile(dataPath, "utf-8");
+    return JSON.parse(data) as Question[];
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new JsonStorage();
