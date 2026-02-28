@@ -6,11 +6,22 @@ import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
-import { ChevronRight, ShieldAlert } from "lucide-react";
+import { ChevronRight, ShieldAlert, RotateCcw } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function Quiz() {
   const [_, setLocation] = useLocation();
-  const { filteredQuestions, currentIndex, answerQuestion, isComplete, user } = useQuiz();
+  const { filteredQuestions, currentIndex, answerQuestion, isComplete, user, resetQuiz } = useQuiz();
   const [direction, setDirection] = useState(1); // 1 for forward
 
   useEffect(() => {
@@ -67,9 +78,39 @@ export default function Quiz() {
         {/* Progress Header */}
         <div className="space-y-2">
           <div className="flex justify-between items-end">
-            <span className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
-              Question {currentIndex + 1} of {filteredQuestions.length}
-            </span>
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
+                Question {currentIndex + 1} of {filteredQuestions.length}
+              </span>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1.5 text-muted-foreground hover:text-destructive">
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    Restart
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Restart Test?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will reset your current progress and take you back to the start.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={() => {
+                        resetQuiz();
+                        setLocation("/");
+                      }}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Restart
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
             <span className="text-sm font-semibold text-primary">
               {Math.round(progress)}%
             </span>

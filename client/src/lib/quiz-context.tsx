@@ -54,6 +54,7 @@ export function QuizProvider({ children }: { children: ReactNode }) {
     // Apply filtering logic
     const filtered = allQuestions.filter((q) => {
       const categoryMatch = q.category === user.category;
+      // license code "00" is applicable to all tests for the selected category
       const licenseMatch = q.license_code === "00" || q.license_code === user.licenseCode;
       return categoryMatch && licenseMatch;
     });

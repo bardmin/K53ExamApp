@@ -16,17 +16,23 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookOpen, FileCheck2, Timer } from "lucide-react";
 
-const LICENSE_CODES = ["00", "01", "02", "03", "04", "08", "10", "11", "14"];
 const CATEGORIES = [
-  { value: "1", label: "Category 1 (Light Vehicles)" },
-  { value: "2", label: "Category 2 (Heavy Vehicles)" },
-  { value: "3", label: "Category 3 (Motorcycles)" },
+  { value: "1", label: "Category 1 - Rules of the Road" },
+  { value: "2", label: "Category 2 - Road signs" },
+  { value: "3", label: "Category 3 - Vehicle controls" },
 ];
 
 export default function Home() {
   const [_, setLocation] = useLocation();
   const { data: questions, isLoading, isError } = useQuestions();
   const { startQuiz } = useQuiz();
+
+  // Extract available license codes from data, excluding "00"
+  const availableLicenseCodes = questions 
+    ? Array.from(new Set(questions.map(q => q.license_code)))
+        .filter(code => code !== "00")
+        .sort()
+    : [];
 
   const [formData, setFormData] = useState({
     name: "",
@@ -143,11 +149,18 @@ export default function Home() {
                         <SelectValue placeholder="Select code..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {LICENSE_CODES.map(code => (
-                          <SelectItem key={code} value={code}>
-                            Code {code}
-                          </SelectItem>
-                        ))}
+                        {availableLicenseCodes.map(code => {
+                          let label = `Code ${code}`;
+                          if (code === "01") label += " (Motorcycles)";
+                          else if (code === "02") label += " (Light Motor Vehicles)";
+                          else if (code === "03") label += " (Heavy Motor Vehicles)";
+                          
+                          return (
+                            <SelectItem key={code} value={code}>
+                              {label}
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                   </div>
