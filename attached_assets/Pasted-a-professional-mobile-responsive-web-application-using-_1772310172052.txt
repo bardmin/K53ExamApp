@@ -1,0 +1,45 @@
+a professional, mobile-responsive web application using HTML5, CSS3 (modern styling), and Vanilla JavaScript. The app will be a driving license practice test based on an attached JSON file.
+
+1. Data Handling:
+
+The app must load data from questiondata.json.
+
+Questions are structured with question_number, question_text, category, license_code, contains_image, image_link, and an options array.
+
+Filtering Logic: Initially, ask the user for their Name, Surname, License Code, and Category. The test should only include questions where:
+
+The category matches the user's selection AND
+
+The license_code is "00" OR matches the user's selected license code.
+
+2. UI/UX Design:
+
+Theme: Professional, clean, and optimized for mobile screens (use a 'Mobile First' approach).
+
+Initial Screen: A clean form to capture user details and test preferences.
+
+Question Screen: Use a 'Flip Card' or 'Slide' animation for each question. Display the question text, any associated image (if contains_image is true), and the possible answers as selectable buttons.
+
+Navigation: User selects an answer and moves to the next card.
+
+3. Results & Scorecard:
+
+Display a professional scorecard at the end showing the user's full name and final score.
+
+Share Option: Implement a 'Share' button. For the web app, this should trigger the Web Share API or allow downloading the result as a simple generated image/PDF.
+
+Review Option: This opens a separate view listing all attempted questions.
+
+Correctly answered questions: Green text.
+
+Wrongly answered or unanswered: Black text.
+
+Detailed Review: Clicking a question in the list shows the full question with the correct answer ticked (Green). If the user was wrong, their selection should be highlighted in Red.
+
+4. Technical Requirements:
+
+Write the entire app in a single file or a clean structure (index.html, style.css, script.js).
+
+Use local storage or a JavaScript object to track user answers during the session.
+
+Ensure the code is well-commented and easy to maintain.
