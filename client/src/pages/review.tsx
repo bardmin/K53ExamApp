@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useLocation, Link } from "wouter";
 import { useQuiz } from "@/lib/quiz-context";
 import { Layout } from "@/components/layout";
@@ -10,11 +10,16 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, CheckCircle2, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
 
 export default function Review() {
   const [_, setLocation] = useLocation();
   const { user, filteredQuestions, answers, isComplete } = useQuiz();
+  const [failedImages, setFailedImages] = useState<Set<number>>(() => new Set());
+
+  const handleImageError = useCallback((questionNumber: number) => {
+    setFailedImages((prev) => new Set(prev).add(questionNumber));
+  }, []);
 
   useEffect(() => {
     if (!user || !isComplete) {
@@ -69,18 +74,29 @@ export default function Review() {
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="px-6 pb-6 pt-2 bg-muted/30">
-                    
+
                     {q.contains_image && q.image_link && (
-                       <div className="mb-6 rounded-lg overflow-hidden border bg-white flex items-center justify-center max-w-sm mx-auto">
-                         <img src={q.image_link} alt="Question visual" className="w-full h-auto object-contain max-h-[200px]" />
-                       </div>
+                      <div className="mb-6 rounded-lg overflow-hidden border bg-white flex items-center justify-center max-w-sm mx-auto min-h-[150px]">
+                        {failedImages.has(q.question_number) ? (
+                          <div className="flex flex-col items-center justify-center text-muted-foreground py-6">
+                            <svg className="w-8 h-8 mb-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+                              <circle cx="9" cy="9" r="2" />
+                              <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                            </svg>
+                            <p className="text-sm">Image not available</p>
+                          </div>
+                        ) : (
+                          <img src={q.image_link} alt="Question visual" className="w-full h-auto object-contain max-h-[200px]" onError={() => handleImageError(q.question_number)} />
+                        )}
+                      </div>
                     )}
 
                     <div className="space-y-3 pl-9">
                       {q.options.map(opt => {
                         const isThisCorrect = opt.correct_answer;
                         const isThisUserSelected = opt.answer_number === userAnswerNum;
-                        
+
                         let optionStyle = "border-border bg-card";
                         let icon = null;
 
@@ -97,14 +113,14 @@ export default function Review() {
                             <span className={`flex items-center justify-center w-7 h-7 rounded-full text-sm font-bold mr-3 shrink-0 ${isThisCorrect ? 'bg-success text-white' : isThisUserSelected ? 'bg-destructive text-white' : 'bg-secondary text-secondary-foreground'}`}>
                               {opt.answer_number}
                             </span>
-                            <span className={`font-medium pr-8 ${isThisCorrect ? 'text-success-foreground font-bold' : isThisUserSelected ? 'text-destructive-foreground font-bold' : 'text-foreground'}`}>
+                            <span className={`font-medium pr-8 ${isThisCorrect ? 'text-success font-bold' : isThisUserSelected ? 'text-destructive font-bold' : 'text-foreground'}`}>
                               {opt.answer_text}
                             </span>
                             {icon}
                           </div>
                         );
                       })}
-                      
+
                       {isUnanswered && (
                         <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted text-muted-foreground text-sm font-medium">
                           <AlertTriangle className="w-4 h-4" />

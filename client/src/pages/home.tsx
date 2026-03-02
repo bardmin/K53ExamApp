@@ -28,10 +28,10 @@ export default function Home() {
   const { startQuiz } = useQuiz();
 
   // Extract available license codes from data, excluding "00"
-  const availableLicenseCodes = questions 
+  const availableLicenseCodes = questions
     ? Array.from(new Set(questions.map(q => q.license_code)))
-        .filter(code => code !== "00")
-        .sort()
+      .filter(code => code !== "00")
+      .sort()
     : [];
 
   const [formData, setFormData] = useState({
@@ -63,14 +63,14 @@ export default function Home() {
   return (
     <Layout>
       <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        
+
         <div className="text-center space-y-4">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-semibold mb-2">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
             </span>
-            2024 Updated Syllabus
+            {new Date().getFullYear()} Updated Syllabus
           </div>
           <h2 className="text-4xl md:text-5xl font-display font-extrabold text-foreground tracking-tight">
             Pass your driving test <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-400">with confidence</span>
@@ -154,7 +154,7 @@ export default function Home() {
                           if (code === "01") label += " (Motorcycles)";
                           else if (code === "02") label += " (Light Motor Vehicles)";
                           else if (code === "03") label += " (Heavy Motor Vehicles)";
-                          
+
                           return (
                             <SelectItem key={code} value={code}>
                               {label}
@@ -185,8 +185,8 @@ export default function Home() {
                   </div>
                 </div>
 
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   disabled={!isFormValid}
                   className="w-full h-14 text-lg font-bold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all hover:-translate-y-0.5 rounded-xl"
                 >

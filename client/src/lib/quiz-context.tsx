@@ -8,19 +8,31 @@ export interface UserDetails {
   category: number;
 }
 
+// K53 pass thresholds by category (percentage required to pass)
+// Category 1: Rules of the Road, Category 2: Road Signs, Category 3: Vehicle Controls
+const PASS_THRESHOLDS: Record<number, number> = {
+  1: 75,
+  2: 75,
+  3: 75,
+};
+
 interface QuizState {
   user: UserDetails | null;
   filteredQuestions: Question[];
   answers: Record<number, string>; // question_number -> answer_number
   currentIndex: number;
   isComplete: boolean;
+  startTime: number | null; // timestamp (ms) when quiz started
 }
 
 interface QuizContextType extends QuizState {
   startQuiz: (user: UserDetails, allQuestions: Question[]) => void;
   answerQuestion: (answerNumber: string) => void;
+  goToPrevious: () => void;
   resetQuiz: () => void;
   getScore: () => { correct: number; total: number; percentage: number };
+  getPassThreshold: () => number;
+  getElapsedSeconds: () => number;
 }
 
 const QuizContext = createContext<QuizContextType | undefined>(undefined);
@@ -43,6 +55,7 @@ export function QuizProvider({ children }: { children: ReactNode }) {
       answers: {},
       currentIndex: 0,
       isComplete: false,
+      startTime: null,
     };
   });
 
@@ -51,7 +64,6 @@ export function QuizProvider({ children }: { children: ReactNode }) {
   }, [state]);
 
   const startQuiz = (user: UserDetails, allQuestions: Question[]) => {
-    // Apply filtering logic
     const filtered = allQuestions.filter((q) => {
       const categoryMatch = q.category === user.category;
       // license code "00" is applicable to all tests for the selected category
@@ -65,6 +77,7 @@ export function QuizProvider({ children }: { children: ReactNode }) {
       answers: {},
       currentIndex: 0,
       isComplete: false,
+      startTime: Date.now(),
     });
   };
 
@@ -72,7 +85,7 @@ export function QuizProvider({ children }: { children: ReactNode }) {
     setState((prev) => {
       const currentQuestion = prev.filteredQuestions[prev.currentIndex];
       const newAnswers = { ...prev.answers, [currentQuestion.question_number]: answerNumber };
-      
+
       const nextIndex = prev.currentIndex + 1;
       const isComplete = nextIndex >= prev.filteredQuestions.length;
 
@@ -85,6 +98,13 @@ export function QuizProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const goToPrevious = () => {
+    setState((prev) => {
+      if (prev.currentIndex <= 0) return prev;
+      return { ...prev, currentIndex: prev.currentIndex - 1 };
+    });
+  };
+
   const resetQuiz = () => {
     setState({
       user: null,
@@ -92,13 +112,14 @@ export function QuizProvider({ children }: { children: ReactNode }) {
       answers: {},
       currentIndex: 0,
       isComplete: false,
+      startTime: null,
     });
     localStorage.removeItem(STORAGE_KEY);
   };
 
   const getScore = () => {
     if (!state.filteredQuestions.length) return { correct: 0, total: 0, percentage: 0 };
-    
+
     let correct = 0;
     const total = state.filteredQuestions.length;
 
@@ -117,8 +138,21 @@ export function QuizProvider({ children }: { children: ReactNode }) {
     };
   };
 
+  const getPassThreshold = () => {
+    const category = state.user?.category;
+    return category !== undefined ? (PASS_THRESHOLDS[category] ?? 75) : 75;
+  };
+
+  const getElapsedSeconds = () => {
+    if (!state.startTime) return 0;
+    const endTime = state.isComplete ? Date.now() : Date.now();
+    return Math.floor((endTime - state.startTime) / 1000);
+  };
+
   return (
-    <QuizContext.Provider value={{ ...state, startQuiz, answerQuestion, resetQuiz, getScore }}>
+    <QuizContext.Provider
+      value={{ ...state, startQuiz, answerQuestion, goToPrevious, resetQuiz, getScore, getPassThreshold, getElapsedSeconds }}
+    >
       {children}
     </QuizContext.Provider>
   );
@@ -131,3 +165,4 @@ export function useQuiz() {
   }
   return context;
 }
+

@@ -5,12 +5,12 @@ import { useQuiz } from "@/lib/quiz-context";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Share2, RefreshCw, ListChecks, Award, Trophy, AlertTriangle } from "lucide-react";
+import { Share2, RefreshCw, ListChecks, Award, Trophy, AlertTriangle, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Results() {
   const [_, setLocation] = useLocation();
-  const { user, getScore, resetQuiz, isComplete } = useQuiz();
+  const { user, getScore, resetQuiz, isComplete, getPassThreshold, getElapsedSeconds } = useQuiz();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -22,11 +22,18 @@ export default function Results() {
   if (!user || !isComplete) return null;
 
   const score = getScore();
-  const isPassing = score.percentage >= 75; // Assume 75% is passing for visual purposes
+  const isPassing = score.percentage >= getPassThreshold();
+
+  const formatTime = (secs: number) => {
+    const m = Math.floor(secs / 60).toString().padStart(2, "0");
+    const s = (secs % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+  };
+  const elapsedTime = formatTime(getElapsedSeconds());
 
   const handleShare = async () => {
     const text = `I just scored ${score.percentage}% (${score.correct}/${score.total}) on my License Code ${user.licenseCode} practice test!`;
-    
+
     if (navigator.share) {
       try {
         await navigator.share({
@@ -53,7 +60,7 @@ export default function Results() {
 
   return (
     <Layout>
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
@@ -61,7 +68,7 @@ export default function Results() {
       >
         <Card className="glass-card overflow-hidden relative border-none shadow-2xl">
           <div className={`absolute top-0 left-0 w-full h-32 ${isPassing ? 'bg-gradient-to-br from-success to-emerald-400' : 'bg-gradient-to-br from-destructive to-red-400'}`} />
-          
+
           <CardContent className="pt-24 pb-12 px-6 sm:px-12 flex flex-col items-center text-center relative z-10">
             <div className={`w-24 h-24 rounded-full flex items-center justify-center bg-card shadow-xl mb-6 border-4 ${isPassing ? 'border-success text-success' : 'border-destructive text-destructive'}`}>
               {isPassing ? <Trophy className="w-12 h-12" /> : <AlertTriangle className="w-12 h-12" />}
@@ -82,7 +89,7 @@ export default function Results() {
                 </span>
               </div>
               <div className="h-4 bg-background rounded-full overflow-hidden mb-2">
-                <motion.div 
+                <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${score.percentage}%` }}
                   transition={{ duration: 1, delay: 0.5, ease: "easeOut" }}
@@ -91,6 +98,10 @@ export default function Results() {
               </div>
               <p className="text-sm font-medium text-muted-foreground">
                 {score.correct} correct out of {score.total} questions
+              </p>
+              <p className="flex items-center justify-center gap-1.5 text-sm font-medium text-muted-foreground mt-2">
+                <Clock className="w-4 h-4" />
+                Time taken: {elapsedTime}
               </p>
             </div>
 
@@ -101,12 +112,12 @@ export default function Results() {
                   Review Answers
                 </Button>
               </Link>
-              
+
               <Button onClick={handleShare} className="w-full h-14 rounded-xl text-base font-semibold shadow-md" variant="default">
                 <Share2 className="w-5 h-5 mr-2" />
                 Share Result
               </Button>
-              
+
               <Button onClick={handleRetake} className="w-full h-14 rounded-xl text-base font-semibold shadow-md sm:col-span-2 mt-2" variant="outline">
                 <RefreshCw className="w-5 h-5 mr-2" />
                 Retake Test

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuiz } from "@/lib/quiz-context";
@@ -6,7 +6,7 @@ import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
-import { ChevronRight, ShieldAlert, RotateCcw } from "lucide-react";
+import { ChevronRight, ShieldAlert, RotateCcw, ChevronLeft, Clock } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,8 +21,14 @@ import {
 
 export default function Quiz() {
   const [_, setLocation] = useLocation();
-  const { filteredQuestions, currentIndex, answerQuestion, isComplete, user, resetQuiz } = useQuiz();
+  const { filteredQuestions, currentIndex, answerQuestion, goToPrevious, isComplete, user, resetQuiz, getElapsedSeconds } = useQuiz();
   const [direction, setDirection] = useState(1); // 1 for forward
+  const [elapsedDisplay, setElapsedDisplay] = useState(0);
+  const [failedImages, setFailedImages] = useState<Set<number>>(() => new Set());
+
+  const handleImageError = useCallback((questionNumber: number) => {
+    setFailedImages((prev) => new Set(prev).add(questionNumber));
+  }, []);
 
   useEffect(() => {
     // Redirect if accessing directly without starting
@@ -33,13 +39,19 @@ export default function Quiz() {
 
   useEffect(() => {
     if (isComplete) {
-      // Small delay before redirecting to allow last animation to play
-      const timer = setTimeout(() => {
-        setLocation("/results");
-      }, 400);
+      const timer = setTimeout(() => setLocation("/results"), 400);
       return () => clearTimeout(timer);
     }
   }, [isComplete, setLocation]);
+
+  // Live timer — ticks every second while the quiz is active
+  useEffect(() => {
+    if (isComplete) return;
+    const interval = setInterval(() => {
+      setElapsedDisplay(getElapsedSeconds());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isComplete, getElapsedSeconds]);
 
   if (!user || filteredQuestions.length === 0 || isComplete) return null;
 
@@ -49,6 +61,17 @@ export default function Quiz() {
   const handleAnswer = (answerNum: string) => {
     setDirection(1);
     answerQuestion(answerNum);
+  };
+
+  const handlePrevious = () => {
+    setDirection(-1);
+    goToPrevious();
+  };
+
+  const formatTime = (secs: number) => {
+    const m = Math.floor(secs / 60).toString().padStart(2, "0");
+    const s = (secs % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
   };
 
   const variants = {
@@ -74,7 +97,7 @@ export default function Quiz() {
   return (
     <Layout>
       <div className="w-full space-y-6">
-        
+
         {/* Progress Header */}
         <div className="space-y-2">
           <div className="flex justify-between items-end">
@@ -82,6 +105,16 @@ export default function Quiz() {
               <span className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
                 Question {currentIndex + 1} of {filteredQuestions.length}
               </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs gap-1.5 text-muted-foreground"
+                disabled={currentIndex === 0}
+                onClick={handlePrevious}
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                Previous
+              </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1.5 text-muted-foreground hover:text-destructive">
@@ -98,7 +131,7 @@ export default function Quiz() {
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction 
+                    <AlertDialogAction
                       onClick={() => {
                         resetQuiz();
                         setLocation("/");
@@ -111,9 +144,15 @@ export default function Quiz() {
                 </AlertDialogContent>
               </AlertDialog>
             </div>
-            <span className="text-sm font-semibold text-primary">
-              {Math.round(progress)}%
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1 text-sm text-muted-foreground font-medium">
+                <Clock className="w-3.5 h-3.5" />
+                {formatTime(elapsedDisplay)}
+              </span>
+              <span className="text-sm font-semibold text-primary">
+                {Math.round(progress)}%
+              </span>
+            </div>
           </div>
           <Progress value={progress} className="h-2.5 rounded-full bg-secondary" />
         </div>
@@ -137,26 +176,30 @@ export default function Quiz() {
             >
               <Card className="glass-card overflow-hidden shadow-xl border-t-4 border-t-primary">
                 <CardContent className="p-6 sm:p-8 space-y-8">
-                  
+
                   <h3 className="text-xl sm:text-2xl font-display font-bold text-foreground leading-snug">
                     {currentQ.question_text}
                   </h3>
 
                   {currentQ.contains_image && currentQ.image_link && (
                     <div className="relative rounded-xl overflow-hidden border bg-muted flex items-center justify-center min-h-[200px]">
-                      <img 
-                        src={currentQ.image_link} 
-                        alt="Question reference" 
-                        className="w-full h-auto max-h-[300px] object-contain"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                          e.currentTarget.parentElement?.classList.add('flex-col', 'text-muted-foreground');
-                          // Fallback rendering
-                          const div = document.createElement('div');
-                          div.innerHTML = `<svg class="w-10 h-10 mb-2 mx-auto" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg><p class="text-sm">Image not available</p>`;
-                          e.currentTarget.parentElement?.appendChild(div);
-                        }}
-                      />
+                      {failedImages.has(currentQ.question_number) ? (
+                        <div className="flex flex-col items-center justify-center text-muted-foreground py-8">
+                          <svg className="w-10 h-10 mb-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+                            <circle cx="9" cy="9" r="2" />
+                            <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                          </svg>
+                          <p className="text-sm">Image not available</p>
+                        </div>
+                      ) : (
+                        <img
+                          src={currentQ.image_link}
+                          alt="Question reference"
+                          className="w-full h-auto max-h-[300px] object-contain"
+                          onError={() => handleImageError(currentQ.question_number)}
+                        />
+                      )}
                     </div>
                   )}
 
