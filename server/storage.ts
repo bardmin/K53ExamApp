@@ -1,7 +1,6 @@
 import { Question, questionSchema } from "@shared/schema";
 import { z } from "zod";
-import fs from "fs/promises";
-import path from "path";
+import questionData from "./data/questiondata.json";
 
 export interface IStorage {
   getQuestions(): Promise<Question[]>;
@@ -9,11 +8,8 @@ export interface IStorage {
 
 export class JsonStorage implements IStorage {
   async getQuestions(): Promise<Question[]> {
-    const dataPath = path.join(process.cwd(), "server", "data", "questiondata.json");
-    const rawData = await fs.readFile(dataPath, "utf-8");
-    const data = rawData.replace(/^\uFEFF/, ""); // Strip BOM if present
-    const parsed = JSON.parse(data);
-    const result = z.array(questionSchema).safeParse(parsed);
+    const data = questionData;
+    const result = z.array(questionSchema).safeParse(data);
     if (!result.success) {
       const summary = result.error.issues
         .slice(0, 5)
