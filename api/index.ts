@@ -7,7 +7,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // Logging middleware for Vercel logs
-app.use((req, res, next) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
     const start = Date.now();
     res.on("finish", () => {
         const duration = Date.now() - start;
